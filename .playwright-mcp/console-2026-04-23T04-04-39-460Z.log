@@ -1,0 +1,37 @@
+[     332ms] [LOG] 🔥 Firebase Debug: Client-side detected, starting initialization...  @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     332ms] [LOG] 🔥 Firebase Debug: Initializing Firebase app...  @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     332ms] [LOG] 🔥 Firebase Debug: Firebase app created  @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     332ms] [LOG] 🔥 Firebase Debug: ✅ Firebase app initialized successfully  @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     336ms] [LOG] 🔥 Firebase Debug: Checking messaging support...  @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     459ms] [LOG] 🔍 Checking build version... @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     460ms] [LOG] 📦 Current build version: 1.0.2050 @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     460ms] [LOG] 📅 Current build date: 2026-04-21T07:33:14Z @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     460ms] [LOG] 💾 Stored build version: 1.0.2050 @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     460ms] [LOG] 💾 Stored build date: 2026-04-21T07:33:14Z @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     460ms] [LOG] ✅ Build version unchanged - no action needed @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     460ms] [LOG] 🔍 Firebase messaging ready: false @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     460ms] [LOG] ⏳ Waiting for Firebase messaging to be ready... @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     461ms] [LOG] cookie removed -===> false @ https://staging.swisstrustlayer.com/_next/static/chunks/1306-fbaf30899bb80736.js:0
+[     461ms] [LOG] 🔍 Checking if running in Microsoft Teams... @ https://staging.swisstrustlayer.com/_next/static/chunks/1306-fbaf30899bb80736.js:0
+[     479ms] [ERROR] ❌ Not running in Microsoft Teams: Error: Initialization Failed. No Parent window found.
+    at A (https://staging.swisstrustlayer.com/_next/static/chunks/9498-ffc5fac81444ffee.js:1:4292)
+    at https://staging.swisstrustlayer.com/_next/static/chunks/9498-ffc5fac81444ffee.js:1:40367
+    at new Promise (<anonymous>)
+    at https://staging.swisstrustlayer.com/_next/static/chunks/9498-ffc5fac81444ffee.js:1:40263
+    at https://staging.swisstrustlayer.com/_next/static/chunks/9498-ffc5fac81444ffee.js:1:46891
+    at new Promise (<anonymous>)
+    at d (https://staging.swisstrustlayer.com/_next/static/chunks/9498-ffc5fac81444ffee.js:1:46847)
+    at Object.j (https://staging.swisstrustlayer.com/_next/static/chunks/9498-ffc5fac81444ffee.js:1:40258)
+    at https://staging.swisstrustlayer.com/_next/static/chunks/1306-fbaf30899bb80736.js:1:743
+    at https://staging.swisstrustlayer.com/_next/static/chunks/1306-fbaf30899bb80736.js:1:1404 @ https://staging.swisstrustlayer.com/_next/static/chunks/1306-fbaf30899bb80736.js:0
+[     487ms] [LOG] ✅ Firebase Messaging Service Worker registered successfully @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     488ms] [LOG] 🔥 Firebase Debug: Checking service worker support...  @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     488ms] [LOG] 🔥 Firebase Debug: Registering service worker...  @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     488ms] [LOG] 🔥 Firebase Debug: Initializing Firebase messaging...  @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     488ms] [LOG] 🔥 Firebase Debug: ✅ Firebase messaging initialized successfully  @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     491ms] [LOG] ✅ PWA Service Worker registered successfully @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[     516ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "new-password"): (More info: https://goo.gl/9p2vKq) %o @ https://staging.swisstrustlayer.com/signup:0
+[     516ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "new-password"): (More info: https://goo.gl/9p2vKq) %o @ https://staging.swisstrustlayer.com/signup:0
+[    1461ms] [LOG] 🔍 Firebase messaging ready: true @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[    1463ms] [LOG] 🔍 Firebase messaging ready: true @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[    1464ms] [LOG] 🔗 Setting up Firebase messaging listener... @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0

@@ -1,0 +1,83 @@
+- generic [ref=e1]:
+  - alert [ref=e2]
+  - generic [ref=e31]:
+    - generic [ref=e34]:
+      - generic [ref=e36] [cursor=pointer]:
+        - generic [ref=e38]:
+          - combobox [ref=e40]
+          - generic [ref=e41]:
+            - img [ref=e42]
+            - text: English
+        - generic:
+          - img:
+            - img
+      - button "Switch to dark mode" [ref=e44] [cursor=pointer]:
+        - img "moon" [ref=e45]:
+          - img [ref=e46]
+    - generic [ref=e51]:
+      - generic [ref=e52]:
+        - img "Swiss Trust Layer" [ref=e53]
+        - heading "Welcome Back 👋" [level=2] [ref=e54]
+        - generic [ref=e55]: Please enter your email and password for login.
+      - generic [ref=e56]:
+        - generic [ref=e58]:
+          - generic "Your Email" [ref=e60]: "* Your Email"
+          - textbox "* Your Email" [ref=e64]:
+            - /placeholder: Enter your email
+            - text: test@example.com
+        - generic [ref=e66]:
+          - generic "Password" [ref=e68]: "* Password"
+          - generic [ref=e72]:
+            - textbox "* Password" [ref=e73]:
+              - /placeholder: Enter your password
+              - text: testpassword123
+            - img "eye-invisible" [ref=e75] [cursor=pointer]:
+              - img [ref=e76]
+        - generic [ref=e79]:
+          - generic [ref=e85] [cursor=pointer]:
+            - checkbox "Remember Me" [ref=e87]
+            - generic [ref=e89]: Remember Me
+          - link "Forgot password?" [ref=e91] [cursor=pointer]:
+            - /url: /forgot-password
+        - button "Login" [active] [ref=e97] [cursor=pointer]:
+          - generic [ref=e98]: Login
+      - generic [ref=e99]:
+        - generic [ref=e100]:
+          - text: Don't have an account yet?
+          - link "Sign up" [ref=e101] [cursor=pointer]:
+            - /url: /signup
+        - separator [ref=e102]:
+          - generic [ref=e103]: or
+        - generic [ref=e104]:
+          - button "Sign in with UAE PASS" [ref=e105] [cursor=pointer]:
+            - img "UAE PASS" [ref=e107]
+            - generic [ref=e108]: Login with UAE PASS
+          - button "google-circle Continue with Google" [ref=e109] [cursor=pointer]:
+            - img "google-circle" [ref=e111]:
+              - img [ref=e112]
+            - generic [ref=e114]: Continue with Google
+          - button "apple Continue with Apple" [ref=e115] [cursor=pointer]:
+            - img "apple" [ref=e117]:
+              - img [ref=e118]
+            - generic [ref=e120]: Continue with Apple
+          - button "facebook Continue with Facebook" [ref=e121] [cursor=pointer]:
+            - img "facebook" [ref=e123]:
+              - img [ref=e124]
+            - generic [ref=e126]: Continue with Facebook
+          - button "linkedin Continue with LinkedIn" [ref=e127] [cursor=pointer]:
+            - img "linkedin" [ref=e129]:
+              - img [ref=e130]
+            - generic [ref=e132]: Continue with LinkedIn
+          - button "Continue with Microsoft" [ref=e133] [cursor=pointer]:
+            - img [ref=e135]
+            - generic [ref=e137]: Continue with Microsoft
+      - generic [ref=e138]: © SwissTrustLayer
+  - generic [ref=e143]:
+    - alert [ref=e145]:
+      - img "close-circle" [ref=e146]:
+        - img [ref=e147]
+      - generic [ref=e149]: Login Failed
+      - generic [ref=e150]: "Can't send mail - all recipients were rejected: 556 5.1.10 <test@example.com>: Recipient address rejected: Domain example.com does not accept mail (nullMX)"
+    - generic "Close" [ref=e151] [cursor=pointer]:
+      - img "close" [ref=e152]:
+        - img [ref=e153]

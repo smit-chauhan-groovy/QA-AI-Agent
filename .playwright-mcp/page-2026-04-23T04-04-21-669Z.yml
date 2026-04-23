@@ -1,0 +1,33 @@
+- generic [active] [ref=e1]:
+  - alert [ref=e2]
+  - generic [ref=e31]:
+    - generic [ref=e34]:
+      - generic [ref=e36] [cursor=pointer]:
+        - generic [ref=e38]:
+          - combobox [ref=e40]
+          - generic [ref=e41]:
+            - img [ref=e42]
+            - text: English
+        - generic:
+          - img:
+            - img
+      - button "Switch to dark mode" [ref=e44] [cursor=pointer]:
+        - img "moon" [ref=e45]:
+          - img [ref=e46]
+    - generic [ref=e157]:
+      - generic [ref=e158]:
+        - img "Swiss Trust Layer" [ref=e159]
+        - heading "Forgot Password" [level=2] [ref=e160]
+        - generic [ref=e161]:
+          - text: Enter your email for the verification process, we
+          - text: will send a 6-digit code to your email.
+      - generic [ref=e162]:
+        - generic [ref=e164]:
+          - generic "Your Email" [ref=e166]: "* Your Email"
+          - generic [ref=e170]:
+            - img "mail" [ref=e172]:
+              - img [ref=e173]
+            - textbox "* Your Email" [ref=e175]:
+              - /placeholder: Your Email
+        - button "Send Code" [ref=e181] [cursor=pointer]:
+          - generic [ref=e182]: Send Code

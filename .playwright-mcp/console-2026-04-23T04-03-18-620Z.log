@@ -1,0 +1,41 @@
+[   14067ms] [LOG] 🔥 Firebase Debug: Client-side detected, starting initialization...  @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   14067ms] [LOG] 🔥 Firebase Debug: Initializing Firebase app...  @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   14068ms] [LOG] 🔥 Firebase Debug: Firebase app created  @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   14068ms] [LOG] 🔥 Firebase Debug: ✅ Firebase app initialized successfully  @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   14085ms] [LOG] 🔥 Firebase Debug: Checking messaging support...  @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   14135ms] [LOG] 🔍 Checking build version... @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   14135ms] [LOG] 📦 Current build version: 1.0.2050 @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   14135ms] [LOG] 📅 Current build date: 2026-04-21T07:33:14Z @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   14135ms] [LOG] 💾 Stored build version: null @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   14135ms] [LOG] 💾 Stored build date: null @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   14135ms] [LOG] ✨ First visit - storing current build version @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   14136ms] [LOG] 🔍 Firebase messaging ready: false @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   14136ms] [LOG] ⏳ Waiting for Firebase messaging to be ready... @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   14136ms] [LOG] cookie removed -===> false @ https://staging.swisstrustlayer.com/_next/static/chunks/app/page-96ff49ba2f5881b8.js:0
+[   14136ms] [LOG] 🔍 Checking if running in Microsoft Teams... @ https://staging.swisstrustlayer.com/_next/static/chunks/app/page-96ff49ba2f5881b8.js:0
+[   14139ms] [ERROR] ❌ Not running in Microsoft Teams: Error: Initialization Failed. No Parent window found.
+    at A (https://staging.swisstrustlayer.com/_next/static/chunks/9498-ffc5fac81444ffee.js:1:4292)
+    at https://staging.swisstrustlayer.com/_next/static/chunks/9498-ffc5fac81444ffee.js:1:40367
+    at new Promise (<anonymous>)
+    at https://staging.swisstrustlayer.com/_next/static/chunks/9498-ffc5fac81444ffee.js:1:40263
+    at https://staging.swisstrustlayer.com/_next/static/chunks/9498-ffc5fac81444ffee.js:1:46891
+    at new Promise (<anonymous>)
+    at d (https://staging.swisstrustlayer.com/_next/static/chunks/9498-ffc5fac81444ffee.js:1:46847)
+    at Object.j (https://staging.swisstrustlayer.com/_next/static/chunks/9498-ffc5fac81444ffee.js:1:40258)
+    at https://staging.swisstrustlayer.com/_next/static/chunks/app/page-96ff49ba2f5881b8.js:1:1505
+    at https://staging.swisstrustlayer.com/_next/static/chunks/app/page-96ff49ba2f5881b8.js:1:2166 @ https://staging.swisstrustlayer.com/_next/static/chunks/app/page-96ff49ba2f5881b8.js:0
+[   14168ms] [LOG] 🔥 Firebase Debug: Checking service worker support...  @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   14168ms] [LOG] 🔥 Firebase Debug: Registering service worker...  @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   14168ms] [LOG] 🔥 Firebase Debug: Initializing Firebase messaging...  @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   14169ms] [LOG] 🔥 Firebase Debug: ✅ Firebase messaging initialized successfully  @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   14720ms] [LOG] ✅ Firebase Messaging Service Worker registered successfully @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   15136ms] [LOG] 🔍 Firebase messaging ready: true @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   15139ms] [LOG] 🔍 Firebase messaging ready: true @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   15140ms] [LOG] 🔗 Setting up Firebase messaging listener... @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   15431ms] [LOG] ✅ PWA Service Worker registered successfully @ https://staging.swisstrustlayer.com/_next/static/chunks/app/layout-144e669c61ef2871.js:0
+[   21330ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ https://staging.swisstrustlayer.com/login:0
+[   24906ms] [WARNING] The resource https://staging.swisstrustlayer.com/_next/static/css/522939fdefc11b53.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://staging.swisstrustlayer.com/login:0
+[   48890ms] [WARNING] The resource https://staging.swisstrustlayer.com/_next/static/css/522939fdefc11b53.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://staging.swisstrustlayer.com/login:0
+[   53878ms] [ERROR] Cross-Origin-Opener-Policy policy would block the window.closed call. @ https://accounts.google.com/gsi/client:135
+[   53878ms] [ERROR] Cross-Origin-Opener-Policy policy would block the window.closed call. @ https://accounts.google.com/gsi/client:135
+[   64451ms] [WARNING] The resource https://staging.swisstrustlayer.com/_next/static/css/522939fdefc11b53.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://staging.swisstrustlayer.com/forgot-password:0

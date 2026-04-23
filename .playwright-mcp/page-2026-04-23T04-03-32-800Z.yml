@@ -1,0 +1,19 @@
+- generic [active] [ref=e1]:
+  - alert [ref=e2]
+  - generic [ref=e3]:
+    - generic [ref=e4]: The User Comes From Our Website www.swisstrustlayer.ch And Start His Journey Or Setup His Account
+    - generic [ref=e8]:
+      - generic [ref=e10]:
+        - img "Swiss Trust Layer" [ref=e11]
+        - heading "Sealmyidea" [level=1] [ref=e12]
+        - generic [ref=e13]: Swiss copyright protections
+      - generic [ref=e15]:
+        - generic [ref=e18] [cursor=pointer]:
+          - img "user" [ref=e19]:
+            - img [ref=e20]
+          - heading "I'm an Individual User" [level=4] [ref=e22]
+        - generic [ref=e25] [cursor=pointer]:
+          - img "team" [ref=e26]:
+            - img [ref=e27]
+          - heading "I represent an Agency/Team" [level=4] [ref=e29]
+    - generic [ref=e30]: © SwissTrustLayer
