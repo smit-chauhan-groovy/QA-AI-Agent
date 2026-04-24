@@ -20,6 +20,95 @@ You never use arbitrary sleeps. You always assert on visible state, not implemen
 
 ---
 
+## Knowledge Base Loading
+
+Before testing UI flows, always load project context:
+
+```bash
+# Check for project knowledge
+if [ -f ".qa-knowledge/critical-flows.md" ]; then
+  echo "=== Loading Critical Flows for Testing ==="
+  
+  # Extract critical flows
+  CRITICAL_FLOWS=$(grep -A 10 "^###" .qa-knowledge/critical-flows.md | grep -E "Entry Point|Steps|Success Criteria")
+  
+  echo "Discovered flows to test:"
+  echo "$CRITICAL_FLOWS"
+  
+  USE_PROJECT_CONTEXT=true
+elif [ -f ".qa-knowledge/project-overview.md" ]; then
+  echo "=== Loading Project Overview ==="
+  
+  # Extract framework information
+  FRAMEWORK=$(grep -A 5 "### Frontend" .qa-knowledge/project-overview.md | grep "Framework" | head -1)
+  UI_LIBRARY=$(grep -A 5 "### Frontend" .qa-knowledge/project-overview.md | grep "UI Library" | head -1)
+  
+  echo "Testing framework: $FRAMEWORK"
+  echo "UI Library: $UI_LIBRARY"
+  
+  USE_PROJECT_CONTEXT=true
+else
+  echo "=== No project context found. Using generic UI testing ==="
+  USE_PROJECT_CONTEXT=false
+fi
+```
+
+### Context-Aware Route Selection
+
+```bash
+# Determine routes to test based on available context
+if [ "$USE_PROJECT_CONTEXT" = "true" ] && [ -f ".qa-knowledge/critical-flows.md" ]; then
+  echo "=== Testing Critical Flows ==="
+  
+  # Extract entry points from critical flows
+  ROUTES_TO_TEST=$(grep "**Entry Point**" .qa-knowledge/critical-flows.md | sed 's/**Entry Point**: //' | sed 's/^\// /')
+  
+  echo "Routes discovered from critical flows:"
+  echo "$ROUTES_TO_TEST"
+  
+else
+  echo "=== Discovering Routes Automatically ==="
+  
+  # Fallback to automatic route discovery
+  if [ -f "src/App.tsx" ] || [ -f "src/App.jsx" ]; then
+    ROUTES=$(grep -r "path=" --include="*.tsx" --include="*.jsx" | grep -o 'path="[^"]*"' | sed 's/path="//;s/"//' | head -10)
+  elif [ -d "src/app" ]; then
+    # Next.js app directory
+    ROUTES=$(find src/app -name "page.tsx" -o -name "page.js" | sed 's|src/app||;s|/page.tsx||;s|/page.js||' | sed 's|^|/|')
+  elif [ -d "src/pages" ]; then
+    # Next.js pages directory  
+    ROUTES=$(find src/pages -name "*.tsx" -o -name "*.jsx" | grep -v "_app\|_document" | sed 's|src/pages||;s|\.tsx||;s|\.jsx||' | sed 's|^/index|/|;s|^|/|')
+  fi
+  
+  echo "Discovered routes: $ROUTES"
+fi
+```
+
+### Test User Credentials Loading
+
+```bash
+# Load test credentials if available
+if [ -f ".qa-knowledge/testing-config.md" ]; then
+  echo "=== Loading Test User Credentials ==="
+  
+  # Extract test user information
+  TEST_USER_EMAIL=$(grep -A 5 "standard_user" .qa-knowledge/testing-config.md | grep "email" | head -1 | sed 's/.*: "\(.*\)".*/\1/')
+  TEST_USER_PASSWORD=$(grep -A 5 "standard_user" .qa-knowledge/testing-config.md | grep "password" | head -1 | sed 's/.*: "\(.*\)".*/\1/')
+  
+  if [ -n "$TEST_USER_EMAIL" ] && [ -n "$TEST_USER_PASSWORD" ]; then
+    echo "✓ Found test user credentials"
+    export TEST_USER_EMAIL="$TEST_USER_EMAIL"
+    export TEST_USER_PASSWORD="$TEST_USER_PASSWORD"
+  else
+    echo "→ Using default test credentials (test@example.com / TestPass123!)"
+    export TEST_USER_EMAIL="test@example.com"
+    export TEST_USER_PASSWORD="TestPass123!"
+  fi
+fi
+```
+
+---
+
 ## Framework Selection
 
 ```
@@ -91,6 +180,32 @@ export abstract class BasePage {
 
 ## Critical Flow Template
 
+### Context-Aware Test Generation
+
+```typescript
+// Generate tests based on .qa-knowledge/critical-flows.md
+const criticalFlows = loadCriticalFlows('.qa-knowledge/critical-flows.md');
+
+test.describe('Critical User Flows from Project Context', () => {
+  criticalFlows.forEach(flow => {
+    test(flow.name, async ({ page }) => {
+      // Use entry point from discovered flows
+      await page.goto(flow.entryPoint);
+      
+      // Execute steps from discovered flow
+      for (const step of flow.steps) {
+        await executeStep(page, step);
+      }
+      
+      // Assert success criteria from discovered flow
+      await assertSuccessCriteria(page, flow.successCriteria);
+    });
+  });
+});
+```
+
+### Generic Authentication Flow (Fallback)
+
 ```typescript
 // e2e/flows/auth.flow.spec.ts
 import { test, expect } from '@playwright/test';
@@ -140,6 +255,17 @@ test.describe('Authentication Flow', () => {
 ---
 
 ## Flow Coverage Checklist
+
+### Context-Aware Coverage (When Project Knowledge Available)
+
+If `.qa-knowledge/critical-flows.md` exists:
+- [x] Load all critical flows from knowledge base
+- [x] Prioritize authentication flows (login, registration, logout)
+- [x] Test business flows (checkout, data entry, etc.)
+- [x] Validate success criteria from discovered flows
+- [x] Use test credentials from testing-config.md
+
+### Generic Coverage (Fallback)
 
 For every app, always cover:
 - [ ] Happy path through the primary user journey

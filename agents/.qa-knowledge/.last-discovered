@@ -1,0 +1,5 @@
+# QA Knowledge Base Last Discovery Timestamp
+# Format: ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)
+# This file is used for smart detection - knowledge older than 7 days triggers auto-refresh
+
+{{LAST_DISCOVERED_TIMESTAMP}}
