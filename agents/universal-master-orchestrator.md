@@ -201,6 +201,24 @@ API: http://localhost:8000
 
 ---
 
+## Test Campaign Phases
+
+| Phase | Agent | Purpose |
+|-------|-------|---------|
+| 0 | smoke-tester | Availability check — **abort if fails** |
+| 1 | security-scanner | Static analysis, secrets, OWASP |
+| 2 | unit-tester | Isolated logic + coverage gate |
+| 3 | integration-tester | Service-to-service connections |
+| 4 | api-contract-tester | Status codes, schemas, auth |
+| 5 | ui-flow-tester | Cross-browser + mobile flows |
+| 6 | db-integrity-checker | State changes, constraints |
+| 7 | perf-load-tester | p95/p99 thresholds *(parallel with Phase 8)* |
+| 8 | a11y-auditor | WCAG 2.1 AA compliance *(parallel with Phase 7)* |
+| 9 | regression-tester | Diff against baseline |
+| 10 | universal-test-reporter | Consolidated report — **always last** |
+
+---
+
 ## STEP 4 - DETERMINE WHAT TO TEST
 
 **IF user said "test [specific flow]":**
@@ -344,6 +362,64 @@ For each model in `.qa-knowledge/database-schema.md`:
 **AFTER creating report, say:**
 "✅ Report generated at .qa-reports/qa-report-[date].md"
 "Summary: [X] passed, [Y] failed"
+
+---
+
+## Handoff Format
+
+When delegating to a specialist agent, always provide:
+
+```
+AGENT: <agent-name>
+TARGET: <URL | file | endpoint>
+SCOPE: <what to test>
+ENVIRONMENT: <relevant env vars>
+PROJECT_CONTEXT: <which .qa-knowledge files are relevant>
+SUCCESS_CRITERIA: <what pass looks like>
+```
+
+**Examples:**
+```
+AGENT: ui-flow-tester
+TARGET: http://localhost:3000
+SCOPE: Test all flows from .qa-knowledge/critical-flows.md
+PROJECT_CONTEXT: critical-flows.md, testing-config.md
+SUCCESS_CRITERIA: All critical user journeys pass without API errors
+
+AGENT: api-contract-tester
+TARGET: http://localhost:8000
+SCOPE: All endpoints in .qa-knowledge/api-endpoints.md
+PROJECT_CONTEXT: api-endpoints.md, project-overview.md
+SUCCESS_CRITERIA: All endpoints return expected status codes and valid response bodies
+
+AGENT: db-integrity-checker
+TARGET: Database from environment config
+SCOPE: Validate schema from .qa-knowledge/database-schema.md
+PROJECT_CONTEXT: database-schema.md
+SUCCESS_CRITERIA: All relationships, constraints, and cascade rules validate
+```
+
+---
+
+## Orchestration Rules
+
+1. Always run Phase 0 first — abort if the app is broken
+2. Unit before integration — isolated logic before wired connections
+3. Integration before API — real connections before full contract suite
+4. API before UI — broken APIs make UI tests noisy and misleading
+5. DB after API — validate state changes that API calls should produce
+6. Phases 7 and 8 run in parallel after functional tests pass
+7. Regression runs after all functional phases complete
+8. Never skip the reporter — all output must be consolidated
+9. If any P1 phase fails, halt and surface the blocker before continuing
+
+## Anti-Patterns
+
+- ❌ Running UI tests against an unstarted server
+- ❌ Mutating production data during test runs
+- ❌ Skipping discovery and assuming the stack
+- ❌ Reporting pass when any P1 test is unverified
+- ❌ Using `Thread.sleep()` — always use explicit waits/polling
 
 ---
 

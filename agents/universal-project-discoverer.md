@@ -428,6 +428,13 @@ Once discovery is complete:
 3. Update test user credentials if needed
 4. Run the QA Orchestrator to test with this knowledge
 
+## Troubleshooting
+
+**Discovery finds nothing:** Confirm you are running from the project root directory (where `package.json`, `requirements.txt`, or `go.mod` lives).
+**Framework not detected:** Manually create `.qa-knowledge/project-overview.md` with your stack details — the orchestrator will use it on the next run.
+**Knowledge seems stale or wrong:** Delete `.qa-knowledge/.last-updated` (or `.last-discovered`) to force a fresh discovery run.
+**Incomplete flows discovered:** Automated discovery cannot infer business rules — edit `.qa-knowledge/critical-flows.md` directly to add domain-specific steps.
+
 ## Updating Knowledge
 
 Re-run the discoverer when:

@@ -9,26 +9,27 @@ Built for **Claude Code** (`.claude/agents/`). Compatible with GitHub Copilot (`
 ## Architecture
 
 ```
-                    ┌───────────────────┐
-                    │  e2e-orchestrator  │  ← Start here
-                    └────────┬──────────┘
-                             │ dispatches
-          ┌──────────────────┼──────────────────┐
-          │          ┌───────┴──────┐            │
-    ┌─────▼─────┐  ┌─▼────────────┐  ┌──────────▼──┐
-    │ security  │  │   api-contract│  │  ui-flow    │
-    │ scanner   │  │   tester      │  │  tester     │
-    └─────┬─────┘  └───────┬──────┘  └──────┬──────┘
-          │                │                 │
-    ┌─────▼─────┐          │         ┌──────▼──────┐
-    │   perf    │          └────────►│  db-integrity│
-    │ load-tester│                  │  checker     │
-    └─────┬─────┘                  └──────┬───────┘
-          │                               │
-    ┌─────▼─────┐                  ┌──────▼──────┐
-    │   a11y    │                  │             │
-    │  auditor  │──────────────────► test-reporter│
-    └───────────┘                  └─────────────┘
+          ┌──────────────────────────────────────┐
+          │  universal-master-orchestrator.md    │  ← Start here
+          │  (qa-agents/ in your project)        │
+          └───────────────┬──────────────────────┘
+                          │ dispatches phases 0-10
+     ┌────────────────────┼─────────────────────┐
+     │                    │                     │
+┌────▼──────┐  ┌──────────▼──────┐  ┌──────────▼──┐
+│ security  │  │  api-contract   │  │  ui-flow    │
+│ scanner   │  │  tester         │  │  tester     │
+└────┬──────┘  └──────────┬──────┘  └──────┬──────┘
+     │                    │                │
+┌────▼──────┐             │        ┌──────▼──────┐
+│   perf    │             └───────►│ db-integrity│
+│ load-tester│                    │  checker    │
+└────┬──────┘                    └──────┬───────┘
+     │                                  │
+┌────▼──────┐                   ┌───────▼────────────────┐
+│   a11y    │                   │  universal-test-reporter│
+│  auditor  │───────────────────►  (always last)          │
+└───────────┘                   └────────────────────────┘
 ```
 
 ---
@@ -37,7 +38,8 @@ Built for **Claude Code** (`.claude/agents/`). Compatible with GitHub Copilot (`
 
 | Agent | Trigger | What it tests |
 |-------|---------|---------------|
-| `e2e-orchestrator` | "test everything", "full E2E" | Plans and coordinates all agents |
+| `universal-master-orchestrator` | "Run the QA orchestrator", "test everything", "full E2E" | Plans, delegates all phases, generates final report |
+| `universal-project-discoverer` | "discover my project", "analyze my codebase" | Auto-generates `.qa-knowledge/` from codebase analysis |
 | `smoke-tester` | "smoke test", "post-deploy check" | App availability, login, critical routes (<5 min) |
 | `unit-tester` | "unit tests", "check coverage" | Jest/Pytest/Vitest, coverage thresholds |
 | `integration-tester` | "integration test", "test connections" | API↔DB, auth middleware, cache, service-to-service |
@@ -48,37 +50,28 @@ Built for **Claude Code** (`.claude/agents/`). Compatible with GitHub Copilot (`
 | `perf-load-tester` | "load test", "latency check" | p95/p99, throughput, spike handling |
 | `a11y-auditor` | "accessibility", "WCAG" | axe-core WCAG 2.1 AA, keyboard nav |
 | `security-scanner` | "security scan", "secrets scan" | OWASP Top 10, CVEs, headers |
-| `test-reporter` | "generate test report" | Consolidated P1/P2 quality report |
+| `universal-test-reporter` | "generate test report" | Consolidated P1/P2/P3 quality report with CI exit codes |
 
 ---
 
 ## Quick Install
 
-### Claude Code
 ```bash
-git clone https://github.com/your-org/e2e-test-agents
-cp e2e-test-agents/.claude/agents/*.md ~/.claude/agents/
+# Copy the agents folder into your project
+mkdir -p qa-agents
+cp /path/to/QA-AI-Agent/agents/*.md qa-agents/
 ```
 
-### GitHub Copilot
-```bash
-mkdir -p .github/agents
-cp e2e-test-agents/.claude/agents/*.md .github/agents/
+Then tell your AI assistant:
 ```
-
-### Cursor
-```bash
-mkdir -p .cursor/rules
-for f in e2e-test-agents/.claude/agents/*.md; do
-  cp "$f" ".cursor/rules/$(basename $f .md).mdc"
-done
+"Run the QA orchestrator from qa-agents/universal-master-orchestrator.md"
 ```
 
 Or use the install script:
 ```bash
-bash e2e-test-agents/scripts/install.sh --tool claude-code
-bash e2e-test-agents/scripts/install.sh --tool copilot
-bash e2e-test-agents/scripts/install.sh --tool cursor
+bash install.sh --tool claude-code   # installs to ~/.claude/agents/
+bash install.sh --tool copilot       # installs to .github/agents/
+bash install.sh --tool cursor        # installs to .cursor/rules/
 ```
 
 ---

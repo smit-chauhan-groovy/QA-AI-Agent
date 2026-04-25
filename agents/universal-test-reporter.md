@@ -32,6 +32,23 @@ Gather information from:
 
 ### STEP 2: Determine Test Coverage
 
+Check which tests were performed and look for these result files:
+
+| Agent | Expected File | Key Fields |
+|-------|--------------|------------|
+| smoke-tester | `smoke-results.json` | checks, verdict |
+| security-scanner | `security-report.json` | findings[] |
+| unit-tester | `unit-results.json` | passed, failed, coverage |
+| integration-tester | `integration-results.json` | phases, failures[] |
+| api-contract-tester | `api-results.json` | passed, failed, failures[] |
+| ui-flow-tester | `playwright-report/results.json` | status, suites[].specs[].tests |
+| db-integrity-checker | `db-results.json` | checks, violations |
+| perf-load-tester | `perf-results.json` | metrics.http_req_duration, thresholds |
+| a11y-auditor | `a11y-results.json` | violations[].impact |
+| regression-tester | `regression-results.json` | regressions, verdict |
+
+If a result file does not exist, mark that layer as **NOT RUN** in the report — never omit it.
+
 Check which tests were performed:
 - UI Flow Tests
 - API Endpoint Tests
@@ -282,6 +299,40 @@ After generating the markdown report, also display a brief summary:
 - Minor documentation gaps
 - Slight performance improvements
 - Cosmetic issues
+
+## JSON Summary for CI
+
+Also create `.qa-reports/summary.json` for CI pipeline integration:
+
+```json
+{
+  "timestamp": "YYYY-MM-DDTHH:MM:SSZ",
+  "release_ready": true,
+  "p1_count": 0,
+  "p2_count": 3,
+  "git_branch": "main",
+  "git_commit": "abc1234",
+  "layers": {
+    "smoke":      { "status": "pass", "passed": 6,   "failed": 0 },
+    "security":   { "status": "pass", "passed": 7,   "failed": 0 },
+    "unit":       { "status": "pass", "passed": 142, "failed": 0, "coverage_pct": 84.2 },
+    "integration":{ "status": "pass", "passed": 24,  "failed": 0 },
+    "api":        { "status": "pass", "passed": 28,  "failed": 0 },
+    "ui":         { "status": "pass", "passed": 11,  "failed": 0 },
+    "db":         { "status": "pass", "passed": 8,   "failed": 0 },
+    "perf":       { "status": "pass", "passed": 1,   "failed": 0 },
+    "a11y":       { "status": "warn", "passed": 9,   "failed": 0 },
+    "regression": { "status": "pass", "regressions": 0 }
+  }
+}
+```
+
+## CI Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | All P1 gates passed — release may proceed |
+| `1` | One or more P1 issues — release blocked |
 
 ## After Report Generation
 
