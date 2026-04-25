@@ -243,10 +243,20 @@ API: http://localhost:8000
    **WITH browser tools:**
    - Navigate to the URL
    - Perform the action
-   - **Call `browser_network_requests` after every action that triggers an API call**
-   - **Check ALL network responses: any status >= 400 is a detected API error → FAIL**
-   - **Also check 2xx responses: if body contains `"error"` or `"errors"` key with non-empty value → FAIL**
-   - Verify the visible UI result
+   - **Call `browser_network_requests` after EVERY action that triggers an API call — do this before moving to the next step**
+   - **⛔ API ERROR CAPTURE PROTOCOL — run after every network check:**
+     1. If ANY response has `status >= 400` → **STOP. Do NOT navigate further.**
+        - Mark current step as ❌ FAIL
+        - Record in Issues: URL, method, status code, response body (first 300 chars)
+        - Add to the "API Errors Detected via Network Monitoring" report table
+        - Then continue to the next step (do not abort the whole flow)
+     2. If response is 2xx but body contains `"error"` or `"errors"` key with a non-empty value → **STOP. Do NOT navigate further.**
+        - Mark current step as ❌ FAIL
+        - Record: URL, method, `200 OK but body.error = "[value]"`
+        - Add to the "API Errors Detected via Network Monitoring" report table
+        - Then continue to the next step
+     3. Only if NO errors detected → mark step ✅ PASS and navigate to next step
+   - Verify the visible UI result after the network check
    - Document Pass/Fail with API response details
 
    **WITHOUT browser tools:**
@@ -291,15 +301,30 @@ For each endpoint in `.qa-knowledge/api-endpoints.md`:
 - A 4xx/5xx response with an empty body is a FAIL (client cannot display a meaningful error)
 - Document results
 
-**API Error Detection Rules (apply to every endpoint test):**
-1. Check `response.status_code` is in the expected range
-2. Parse `response.json()` and look for keys: `error`, `errors`, `detail`, `message`
-   - If status is 2xx AND any of these keys contain a non-empty error value → **FAIL**
-   - If status is 4xx/5xx AND body is empty or not JSON → **FAIL**
-3. When using browser tools (`browser_network_requests`), after every form submit or action:
-   - Call `browser_network_requests` to capture all network calls
-   - Flag any response with `status >= 400` as a detected API error
-   - Report: method, URL, status code, and response body
+**API Error Detection Rules (apply to every endpoint test and every UI step):**
+
+> ⛔ **MANDATORY: Capture errors BEFORE moving to the next step/page. Never silently continue.**
+
+1. After every form submit, button click, or navigation that triggers a network call:
+   - Call `browser_network_requests` immediately
+   - Do NOT navigate to the next page until this check is complete
+
+2. Check `response.status_code`:
+   - If `status >= 400` → **FAIL this step immediately**
+     - Record to Issues: `[METHOD] [URL] → [status] — [body excerpt ≤300 chars]`
+     - Add row to "API Errors Detected via Network Monitoring" table in the report
+     - Continue to next step (do not abort the full flow)
+
+3. If `status` is 2xx, parse `response.json()` and check for keys: `error`, `errors`, `detail`, `message`
+   - If any key has a non-empty error value → **FAIL this step**
+     - Record: `[METHOD] [URL] → 200 OK but body.error = "[value]"`
+     - Add row to "API Errors Detected via Network Monitoring" table
+     - Continue to next step
+
+4. If `status` is 4xx/5xx AND body is empty or not JSON → **FAIL**
+   - Record: `[METHOD] [URL] → [status] — empty/non-JSON body`
+
+5. Only advance to the next step if NO errors were detected in step 2, 3, or 4
 
 ### 4C - Database
 For each model in `.qa-knowledge/database-schema.md`:
@@ -342,9 +367,12 @@ For each model in `.qa-knowledge/database-schema.md`:
 | [path] | [code] | [Yes/No] | [PASS/FAIL] | [details] |
 
 ### API Errors Detected via Network Monitoring
-| URL | Status Code | Response Body Excerpt | Detected In |
-|-----|-------------|----------------------|-------------|
-| [url] | [4xx/5xx] | [first 200 chars] | [flow name] |
+
+> **IMPORTANT:** Every API error captured during UI flow steps MUST appear here. If none were detected, write "None detected" — never leave this section empty or omit it.
+
+| URL | Method | Status Code | Response Body Excerpt | Detected In |
+|-----|--------|-------------|----------------------|-------------|
+| [url] | [GET/POST/etc] | [4xx/5xx or 200+body.error] | [first 300 chars] | [flow name / step] |
 
 ## Issues
 
