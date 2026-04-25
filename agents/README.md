@@ -38,7 +38,11 @@ Built for **Claude Code** (`.claude/agents/`). Compatible with GitHub Copilot (`
 | Agent | Trigger | What it tests |
 |-------|---------|---------------|
 | `e2e-orchestrator` | "test everything", "full E2E" | Plans and coordinates all agents |
-| `ui-flow-tester` | "test the UI", "browser test" | Playwright user journeys, forms, nav |
+| `smoke-tester` | "smoke test", "post-deploy check" | App availability, login, critical routes (<5 min) |
+| `unit-tester` | "unit tests", "check coverage" | Jest/Pytest/Vitest, coverage thresholds |
+| `integration-tester` | "integration test", "test connections" | API↔DB, auth middleware, cache, service-to-service |
+| `regression-tester` | "regression test", "did I break anything" | Baseline diff, visual regression, coverage drops |
+| `ui-flow-tester` | "test the UI", "browser test" | Playwright user journeys — Chrome, Firefox, Safari, Edge, mobile |
 | `api-contract-tester` | "test the API", "REST test" | Status codes, schemas, auth, CRUD |
 | `db-integrity-checker` | "check the database" | Row presence, cascades, constraints |
 | `perf-load-tester` | "load test", "latency check" | p95/p99, throughput, spike handling |
@@ -113,13 +117,17 @@ AUTH_TOKEN=  # populated automatically by api-contract-tester
 ## Phase Order (enforced by Orchestrator)
 
 ```
-PHASE 1  security-scanner      ← Static analysis first
-PHASE 2  api-contract-tester   ← API before UI
-PHASE 3  ui-flow-tester        ← UI after API validated
-PHASE 4  db-integrity-checker  ← Validate state changes
-PHASE 5  perf-load-tester      ┐ Run in parallel after
-PHASE 6  a11y-auditor          ┘ functional tests pass
-PHASE 7  test-reporter         ← Always last
+PHASE 0   smoke-tester          ← Abort if app is broken
+PHASE 1   security-scanner      ← Static analysis first
+PHASE 2   unit-tester           ← Isolated logic, coverage gate
+PHASE 3   integration-tester    ← Wired connections
+PHASE 4   api-contract-tester   ← API before UI
+PHASE 5   ui-flow-tester        ← Chrome, Firefox, Safari, Edge, mobile
+PHASE 6   db-integrity-checker  ← Validate state changes
+PHASE 7   perf-load-tester      ┐ Run in parallel after
+PHASE 8   a11y-auditor          ┘ functional tests pass
+PHASE 9   regression-tester     ← Diff against baseline
+PHASE 10  test-reporter         ← Always last
 ```
 
 ---

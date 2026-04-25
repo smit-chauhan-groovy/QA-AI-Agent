@@ -126,6 +126,7 @@ SUCCESS_CRITERIA: All discovered critical flows pass validation
 ## Activation Triggers
 - "test everything", "full E2E", "end-to-end", "before release check"
 - "quality gate", "complete test run", "regression suite"
+- "smoke test", "post-deploy check", "quick sanity check"
 
 ---
 
@@ -152,13 +153,17 @@ Target: <app name / URL>
 Stack:  <detected tech>
 Date:   <today>
 
+PHASE 0 — Smoke Check        → [smoke-tester]        ← abort if fails
 PHASE 1 — Static Analysis    → [security-scanner]
-PHASE 2 — API Contract       → [api-contract-tester]
-PHASE 3 — UI Flows           → [ui-flow-tester]
-PHASE 4 — Data Integrity     → [db-integrity-checker]
-PHASE 5 — Performance Gate   → [perf-load-tester]
-PHASE 6 — Accessibility Scan → [a11y-auditor]
-PHASE 7 — Report             → [test-reporter]
+PHASE 2 — Unit Tests         → [unit-tester]
+PHASE 3 — Integration Tests  → [integration-tester]
+PHASE 4 — API Contract       → [api-contract-tester]
+PHASE 5 — UI Flows           → [ui-flow-tester]       (cross-browser + mobile)
+PHASE 6 — Data Integrity     → [db-integrity-checker]
+PHASE 7 — Performance Gate   → [perf-load-tester]     ┐ run in parallel
+PHASE 8 — Accessibility Scan → [a11y-auditor]         ┘ after phase 6
+PHASE 9 — Regression Check   → [regression-tester]
+PHASE 10 — Report            → [test-reporter]
 
 PRIORITY: P1 (blocking) / P2 (advisory)
 ```
@@ -167,12 +172,15 @@ PRIORITY: P1 (blocking) / P2 (advisory)
 
 ## Orchestration Rules
 
-1. **Always run PHASE 1 first** — static analysis catches structural issues early.
-2. **API before UI** — broken APIs make UI tests noisy and misleading.
-3. **DB after API** — validate state changes that API calls should produce.
-4. **Performance and A11y run in parallel** after functional tests pass.
-5. **Never skip the reporter** — all output must be consolidated.
-6. If any P1 phase fails, **halt and surface the blocker** before continuing.
+1. **Always run PHASE 0 first** — if smoke tests fail, abort immediately. No point testing a broken app.
+2. **Unit before integration** — confirm isolated logic before testing wired connections.
+3. **Integration before API contract** — verify real connections before full contract suite.
+4. **API before UI** — broken APIs make UI tests noisy and misleading.
+5. **DB after API** — validate state changes that API calls should produce.
+6. **Performance and A11y run in parallel** after functional tests pass.
+7. **Regression after functional phases** — compare against baseline once all tests have run.
+8. **Never skip the reporter** — all output must be consolidated.
+9. If any P1 phase fails, **halt and surface the blocker** before continuing.
 
 ---
 

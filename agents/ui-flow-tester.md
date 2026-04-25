@@ -142,8 +142,15 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'mobile', use: { ...devices['iPhone 14'] } },
+    // Desktop browsers
+    { name: 'chromium',  use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox',   use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit',    use: { ...devices['Desktop Safari'] } },
+    { name: 'edge',      use: { ...devices['Desktop Edge'] } },
+    // Mobile viewports
+    { name: 'mobile-ios',     use: { ...devices['iPhone 14'] } },
+    { name: 'mobile-android', use: { ...devices['Pixel 7'] } },
+    { name: 'tablet-ipad',    use: { ...devices['iPad Pro'] } },
   ],
 });
 ```
@@ -272,20 +279,78 @@ For every app, always cover:
 - [ ] Form validation (empty, invalid format, max length)
 - [ ] Error states (server 500, network offline)
 - [ ] Auth: login / logout / session expiry
-- [ ] Mobile viewport (375px minimum)
 - [ ] Keyboard-only navigation
 - [ ] Browser back/forward behaviour
+
+### Cross-Browser Coverage
+Run all critical flows on:
+- [ ] Chromium (Desktop Chrome)
+- [ ] Firefox (Desktop)
+- [ ] WebKit (Desktop Safari)
+- [ ] Edge (Desktop)
+
+### Mobile Coverage
+- [ ] iPhone 14 viewport (390px) — iOS Safari simulation
+- [ ] Pixel 7 viewport (412px) — Android Chrome simulation
+- [ ] iPad Pro (1024px) — tablet layout
+- [ ] Touch targets >= 44x44px on all interactive elements
+- [ ] No horizontal scrollbar on 375px minimum width
+
+---
+
+## Cross-Browser & Mobile Testing Notes
+
+### Cross-Browser
+All flows in this agent run against Chromium, Firefox, WebKit (Safari), and Edge.
+If a test is flaky on a specific browser, tag it and investigate:
+```typescript
+test.skip(({ browserName }) => browserName === 'webkit', 'Safari-specific flakiness — tracked in #123');
+```
+
+### Real Device Testing (BrowserStack / Sauce Labs)
+For real-device mobile testing beyond viewport simulation, configure:
+```bash
+# BrowserStack
+BROWSERSTACK_USERNAME=xxx BROWSERSTACK_ACCESS_KEY=yyy \
+  npx playwright test --config=playwright.browserstack.config.ts
+```
+```typescript
+// playwright.browserstack.config.ts
+export default defineConfig({
+  use: {
+    connectOptions: {
+      wsEndpoint: `wss://cdp.browserstack.com/playwright?caps=${encodeURIComponent(JSON.stringify({
+        browser: 'safari',
+        os: 'ios',
+        os_version: '16',
+        device: 'iPhone 14',
+        real_mobile: true,
+        'browserstack.username': process.env.BROWSERSTACK_USERNAME,
+        'browserstack.accessKey': process.env.BROWSERSTACK_ACCESS_KEY,
+      }))}`,
+    },
+  },
+});
+```
 
 ---
 
 ## Run Commands
 
 ```bash
-# Headed (local debug)
-npx playwright test --headed --project=chromium
-
-# CI mode
+# All browsers (full cross-browser run)
 npx playwright test --reporter=json
+
+# Single browser
+npx playwright test --project=chromium
+npx playwright test --project=firefox
+npx playwright test --project=webkit
+
+# Mobile only
+npx playwright test --project=mobile-ios --project=mobile-android
+
+# Headed (local debug, Chromium only)
+npx playwright test --headed --project=chromium
 
 # Single flow
 npx playwright test auth.flow.spec.ts

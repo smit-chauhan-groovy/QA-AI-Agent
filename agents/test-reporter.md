@@ -24,12 +24,16 @@ You never re-run tests. You synthesise, classify, and recommend.
 ## Activation
 
 Always invoke the Test Reporter **after** all specialist agents have completed:
-1. Security Scanner
-2. API Contract Tester
-3. UI Flow Tester
-4. DB Integrity Checker
-5. Performance Load Tester
-6. A11y Auditor
+1. Smoke Tester
+2. Security Scanner
+3. Unit Tester
+4. Integration Tester
+5. API Contract Tester
+6. UI Flow Tester (cross-browser + mobile)
+7. DB Integrity Checker
+8. Performance Load Tester
+9. A11y Auditor
+10. Regression Tester
 
 ---
 
@@ -49,12 +53,16 @@ ls -la reports/ 2>/dev/null || echo "No reports directory found"
 
 | Agent | Expected File | Format | Key Fields |
 |-------|--------------|--------|------------|
-| UI Flow Tester | `playwright-report/results.json` | Playwright JSON | `status`, `suites[].specs[].tests` |
+| Smoke Tester | `smoke-results.json` | Custom JSON | `checks`, `verdict` |
+| Security Scanner | `security-report.json` | gitleaks JSON | `findings[]` |
+| Unit Tester | `unit-results.json` | Jest/Pytest JSON | `passed`, `failed`, `coverage` |
+| Integration Tester | `integration-results.json` | Custom JSON | `phases`, `failures[]` |
 | API Contract Tester | `api-results.json` | Custom JSON | `passed`, `failed`, `failures[]` |
+| UI Flow Tester | `playwright-report/results.json` | Playwright JSON | `status`, `suites[].specs[].tests` |
 | DB Integrity Checker | `db-results.json` | Custom JSON | `checks`, `violations` |
 | Performance Load Tester | `perf-results.json` | k6 JSON | `metrics.http_req_duration`, `thresholds` |
 | A11y Auditor | `a11y-results.json` | axe-core JSON | `violations[].impact` |
-| Security Scanner | `security-report.json` | gitleaks JSON | `findings[]` |
+| Regression Tester | `regression-results.json` | Custom JSON | `regressions`, `verdict` |
 
 ### Step 3: Classify Every Finding
 
@@ -114,12 +122,16 @@ Use the template in `templates/quality-report-template.md`. Copy it and populate
   "git_branch": "main",
   "git_commit": "a1b2c3d",
   "layers": {
-    "ui": { "status": "fail", "passed": 11, "failed": 1 },
-    "api": { "status": "pass", "passed": 28, "failed": 0 },
-    "db": { "status": "pass", "passed": 8, "failed": 0 },
-    "perf": { "status": "fail", "passed": 0, "failed": 1 },
-    "a11y": { "status": "warn", "passed": 9, "failed": 0 },
-    "security": { "status": "pass", "passed": 7, "failed": 0 }
+    "smoke":       { "status": "pass", "passed": 6,  "failed": 0 },
+    "security":    { "status": "pass", "passed": 7,  "failed": 0 },
+    "unit":        { "status": "pass", "passed": 142,"failed": 0, "coverage_pct": 84.2 },
+    "integration": { "status": "pass", "passed": 24, "failed": 0 },
+    "api":         { "status": "pass", "passed": 28, "failed": 0 },
+    "ui":          { "status": "fail", "passed": 11, "failed": 1 },
+    "db":          { "status": "pass", "passed": 8,  "failed": 0 },
+    "perf":        { "status": "fail", "passed": 0,  "failed": 1 },
+    "a11y":        { "status": "warn", "passed": 9,  "failed": 0 },
+    "regression":  { "status": "pass", "regressions": 0 }
   },
   "issues": {
     "p1": [
@@ -170,14 +182,18 @@ After generating the report, display a concise summary:
 ╠══════════════════════════════════════════════════════════════════╣
 ║  LAYER           │ STATUS  │ PASSED │ FAILED │                   ║
 ║  ────────────────┼─────────┼────────┼────────┼                   ║
-║  UI Flows        │   ❌    │   11   │    1   │                   ║
+║  Smoke           │   ✅    │    6   │    0   │                   ║
+║  Security        │   ✅    │    7   │    0   │                   ║
+║  Unit Tests      │   ✅    │  142   │    0   │ 84.2% cov         ║
+║  Integration     │   ✅    │   24   │    0   │                   ║
 ║  API Contract    │   ✅    │   28   │    0   │                   ║
+║  UI Flows        │   ❌    │   11   │    1   │ x-browser+mobile  ║
 ║  DB Integrity    │   ✅    │    8   │    0   │                   ║
 ║  Performance     │   ❌    │    0   │    1   │                   ║
 ║  Accessibility   │   ⚠️    │    9   │    0   │                   ║
-║  Security        │   ✅    │    7   │    0   │                   ║
+║  Regression      │   ✅    │    0 regressions │                  ║
 ║  ────────────────┼─────────┼────────┼────────┼                   ║
-║  TOTAL           │         │   63   │    2   │ 96.9%             ║
+║  TOTAL           │         │  235   │    2   │ 99.1%             ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  📄 Full Report: reports/quality-report-2024-04-22.md            ║
 ║  📊 JSON: reports/summary.json                                   ║
