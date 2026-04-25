@@ -157,6 +157,89 @@ export default defineConfig({
 
 ---
 
+## API Response Monitoring (Network Interception)
+
+Every UI flow test MUST intercept API responses to catch errors the UI may silently swallow.
+Add this fixture to `e2e/fixtures/api-monitor.ts` and use it in every test:
+
+```typescript
+// e2e/fixtures/api-monitor.ts
+import { test as base, expect, Page } from '@playwright/test';
+
+type ApiError = { url: string; status: number; body: string };
+
+export const test = base.extend<{ apiErrors: ApiError[] }>({
+  apiErrors: async ({ page }, use) => {
+    const errors: ApiError[] = [];
+
+    page.on('response', async (response) => {
+      const url = response.url();
+      const status = response.status();
+      // Only monitor API calls (adjust pattern to your API base path)
+      if (!url.includes('/api/') && !url.includes('/auth/')) return;
+
+      if (status >= 400) {
+        let body = '';
+        try { body = await response.text(); } catch { /* ignore */ }
+        errors.push({ url, status, body });
+      }
+    });
+
+    await use(errors);
+
+    // After the test, fail if any unexpected API errors occurred
+    if (errors.length > 0) {
+      const summary = errors
+        .map(e => `  ${e.status} ${e.url}\n    Body: ${e.body.slice(0, 200)}`)
+        .join('\n');
+      throw new Error(`API errors detected during test:\n${summary}`);
+    }
+  },
+});
+
+export { expect };
+```
+
+Use in tests instead of plain `import { test, expect } from '@playwright/test'`:
+
+```typescript
+// e2e/flows/auth.flow.spec.ts
+import { test, expect } from '../fixtures/api-monitor';
+
+test('successful login', async ({ page, apiErrors }) => {
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(process.env.TEST_USER_EMAIL!);
+  await page.getByLabel('Password').fill(process.env.TEST_USER_PASSWORD!);
+  await page.getByRole('button', { name: /sign in/i }).click();
+  await expect(page).toHaveURL(/dashboard/);
+  // apiErrors fixture automatically fails the test if any 4xx/5xx API response occurred
+});
+```
+
+### Using Playwright MCP Tools (browser_network_requests)
+
+When running tests interactively via the Playwright MCP, **always call `browser_network_requests`
+after every significant action** to detect API errors that the UI might silently ignore:
+
+```
+After: page.click('submit button')
+→ Call: browser_network_requests
+→ Check: any response with status >= 400 is a test failure
+→ Report: url, status code, and response body
+```
+
+Example check pattern (for MCP-based testing):
+```
+Step 1: Navigate to /login
+Step 2: Fill credentials and submit form
+Step 3: Call browser_network_requests
+Step 4: Assert NO response has status >= 400
+Step 5: If any 4xx/5xx found → FAIL with: "API error: POST /api/auth/login returned 401 — {error body}"
+Step 6: Also assert UI shows correct feedback (not just API status)
+```
+
+---
+
 ## Page Object Model — Base Pattern
 
 ```typescript
@@ -164,7 +247,20 @@ export default defineConfig({
 import { Page, Locator } from '@playwright/test';
 
 export abstract class BasePage {
-  constructor(protected page: Page) {}
+  protected apiErrors: Array<{ url: string; status: number; body: string }> = [];
+
+  constructor(protected page: Page) {
+    // Intercept all API responses to detect silent errors
+    page.on('response', async (response) => {
+      const url = response.url();
+      if (!url.includes('/api/') && !url.includes('/auth/')) return;
+      if (response.status() >= 400) {
+        let body = '';
+        try { body = await response.text(); } catch { /* ignore */ }
+        this.apiErrors.push({ url, status: response.status(), body });
+      }
+    });
+  }
 
   async waitForVisible(locator: Locator, timeout = 10_000) {
     await locator.waitFor({ state: 'visible', timeout });
@@ -173,6 +269,15 @@ export abstract class BasePage {
   async fillAndBlur(locator: Locator, value: string) {
     await locator.fill(value);
     await locator.blur();
+  }
+
+  assertNoApiErrors() {
+    if (this.apiErrors.length > 0) {
+      const summary = this.apiErrors
+        .map(e => `${e.status} ${e.url} — ${e.body.slice(0, 200)}`)
+        .join('\n');
+      throw new Error(`Unexpected API errors:\n${summary}`);
+    }
   }
 
   async assertNoConsoleErrors() {

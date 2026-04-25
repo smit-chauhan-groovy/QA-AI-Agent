@@ -225,8 +225,11 @@ API: http://localhost:8000
    **WITH browser tools:**
    - Navigate to the URL
    - Perform the action
-   - Verify the result
-   - Document Pass/Fail
+   - **Call `browser_network_requests` after every action that triggers an API call**
+   - **Check ALL network responses: any status >= 400 is a detected API error → FAIL**
+   - **Also check 2xx responses: if body contains `"error"` or `"errors"` key with non-empty value → FAIL**
+   - Verify the visible UI result
+   - Document Pass/Fail with API response details
 
    **WITHOUT browser tools:**
    - Create a test checklist
@@ -265,8 +268,20 @@ For each flow in `.qa-knowledge/critical-flows.md`:
 ### 4B - API Endpoints
 For each endpoint in `.qa-knowledge/api-endpoints.md`:
 - Test with sample data
-- Verify response
+- **Verify BOTH the status code AND the response body**
+- A 2xx response with an `error` or `message` field containing an error value is a FAIL
+- A 4xx/5xx response with an empty body is a FAIL (client cannot display a meaningful error)
 - Document results
+
+**API Error Detection Rules (apply to every endpoint test):**
+1. Check `response.status_code` is in the expected range
+2. Parse `response.json()` and look for keys: `error`, `errors`, `detail`, `message`
+   - If status is 2xx AND any of these keys contain a non-empty error value → **FAIL**
+   - If status is 4xx/5xx AND body is empty or not JSON → **FAIL**
+3. When using browser tools (`browser_network_requests`), after every form submit or action:
+   - Call `browser_network_requests` to capture all network calls
+   - Flag any response with `status >= 400` as a detected API error
+   - Report: method, URL, status code, and response body
 
 ### 4C - Database
 For each model in `.qa-knowledge/database-schema.md`:
@@ -304,9 +319,14 @@ For each model in `.qa-knowledge/database-schema.md`:
 | [name] | [PASS/FAIL] | [details] |
 
 ### API Endpoints
-| Endpoint | Status | Notes |
-|----------|--------|-------|
-| [path] | [PASS/FAIL] | [details] |
+| Endpoint | HTTP Status | Body Valid | Status | Notes |
+|----------|-------------|------------|--------|-------|
+| [path] | [code] | [Yes/No] | [PASS/FAIL] | [details] |
+
+### API Errors Detected via Network Monitoring
+| URL | Status Code | Response Body Excerpt | Detected In |
+|-----|-------------|----------------------|-------------|
+| [url] | [4xx/5xx] | [first 200 chars] | [flow name] |
 
 ## Issues
 
