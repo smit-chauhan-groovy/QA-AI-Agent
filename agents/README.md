@@ -9,26 +9,27 @@ Built for **Claude Code** (`.claude/agents/`). Compatible with GitHub Copilot (`
 ## Architecture
 
 ```
-                    ┌───────────────────┐
-                    │  e2e-orchestrator  │  ← Start here
-                    └────────┬──────────┘
-                             │ dispatches
-          ┌──────────────────┼──────────────────┐
-          │          ┌───────┴──────┐            │
-    ┌─────▼─────┐  ┌─▼────────────┐  ┌──────────▼──┐
-    │ security  │  │   api-contract│  │  ui-flow    │
-    │ scanner   │  │   tester      │  │  tester     │
-    └─────┬─────┘  └───────┬──────┘  └──────┬──────┘
-          │                │                 │
-    ┌─────▼─────┐          │         ┌──────▼──────┐
-    │   perf    │          └────────►│  db-integrity│
-    │ load-tester│                  │  checker     │
-    └─────┬─────┘                  └──────┬───────┘
-          │                               │
-    ┌─────▼─────┐                  ┌──────▼──────┐
-    │   a11y    │                  │             │
-    │  auditor  │──────────────────► test-reporter│
-    └───────────┘                  └─────────────┘
+          ┌──────────────────────────────────────┐
+          │  universal-master-orchestrator.md    │  ← Start here
+          │  (qa-agents/ in your project)        │
+          └───────────────┬──────────────────────┘
+                          │ dispatches phases 0-10
+     ┌────────────────────┼─────────────────────┐
+     │                    │                     │
+┌────▼──────┐  ┌──────────▼──────┐  ┌──────────▼──┐
+│ security  │  │  api-contract   │  │  ui-flow    │
+│ scanner   │  │  tester         │  │  tester     │
+└────┬──────┘  └──────────┬──────┘  └──────┬──────┘
+     │                    │                │
+┌────▼──────┐             │        ┌──────▼──────┐
+│   perf    │             └───────►│ db-integrity│
+│ load-tester│                    │  checker    │
+└────┬──────┘                    └──────┬───────┘
+     │                                  │
+┌────▼──────┐                   ┌───────▼────────────────┐
+│   a11y    │                   │  universal-test-reporter│
+│  auditor  │───────────────────►  (always last)          │
+└───────────┘                   └────────────────────────┘
 ```
 
 ---
@@ -37,44 +38,40 @@ Built for **Claude Code** (`.claude/agents/`). Compatible with GitHub Copilot (`
 
 | Agent | Trigger | What it tests |
 |-------|---------|---------------|
-| `e2e-orchestrator` | "test everything", "full E2E" | Plans and coordinates all agents |
-| `ui-flow-tester` | "test the UI", "browser test" | Playwright user journeys, forms, nav |
+| `universal-master-orchestrator` | "Run the QA orchestrator", "test everything", "full E2E" | Plans, delegates all phases, generates final report |
+| `universal-project-discoverer` | "discover my project", "analyze my codebase" | Auto-generates `.qa-knowledge/` from codebase analysis |
+| `smoke-tester` | "smoke test", "post-deploy check" | App availability, login, critical routes (<5 min) |
+| `unit-tester` | "unit tests", "check coverage" | Jest/Pytest/Vitest, coverage thresholds |
+| `integration-tester` | "integration test", "test connections" | API↔DB, auth middleware, cache, service-to-service |
+| `regression-tester` | "regression test", "did I break anything" | Baseline diff, visual regression, coverage drops |
+| `ui-flow-tester` | "test the UI", "browser test" | Playwright user journeys — Chrome, Firefox, Safari, Edge, mobile |
 | `api-contract-tester` | "test the API", "REST test" | Status codes, schemas, auth, CRUD |
 | `db-integrity-checker` | "check the database" | Row presence, cascades, constraints |
 | `perf-load-tester` | "load test", "latency check" | p95/p99, throughput, spike handling |
 | `a11y-auditor` | "accessibility", "WCAG" | axe-core WCAG 2.1 AA, keyboard nav |
 | `security-scanner` | "security scan", "secrets scan" | OWASP Top 10, CVEs, headers |
-| `test-reporter` | "generate test report" | Consolidated P1/P2 quality report |
+| `universal-test-reporter` | "generate test report" | Consolidated P1/P2/P3 quality report with CI exit codes |
 
 ---
 
 ## Quick Install
 
-### Claude Code
 ```bash
-git clone https://github.com/your-org/e2e-test-agents
-cp e2e-test-agents/.claude/agents/*.md ~/.claude/agents/
+# Copy the agents folder into your project
+mkdir -p qa-agents
+cp /path/to/QA-AI-Agent/agents/*.md qa-agents/
 ```
 
-### GitHub Copilot
-```bash
-mkdir -p .github/agents
-cp e2e-test-agents/.claude/agents/*.md .github/agents/
+Then tell your AI assistant:
 ```
-
-### Cursor
-```bash
-mkdir -p .cursor/rules
-for f in e2e-test-agents/.claude/agents/*.md; do
-  cp "$f" ".cursor/rules/$(basename $f .md).mdc"
-done
+"Run the QA orchestrator from qa-agents/universal-master-orchestrator.md"
 ```
 
 Or use the install script:
 ```bash
-bash e2e-test-agents/scripts/install.sh --tool claude-code
-bash e2e-test-agents/scripts/install.sh --tool copilot
-bash e2e-test-agents/scripts/install.sh --tool cursor
+bash install.sh --tool claude-code   # installs to ~/.claude/agents/
+bash install.sh --tool copilot       # installs to .github/agents/
+bash install.sh --tool cursor        # installs to .cursor/rules/
 ```
 
 ---
@@ -113,13 +110,17 @@ AUTH_TOKEN=  # populated automatically by api-contract-tester
 ## Phase Order (enforced by Orchestrator)
 
 ```
-PHASE 1  security-scanner      ← Static analysis first
-PHASE 2  api-contract-tester   ← API before UI
-PHASE 3  ui-flow-tester        ← UI after API validated
-PHASE 4  db-integrity-checker  ← Validate state changes
-PHASE 5  perf-load-tester      ┐ Run in parallel after
-PHASE 6  a11y-auditor          ┘ functional tests pass
-PHASE 7  test-reporter         ← Always last
+PHASE 0   smoke-tester          ← Abort if app is broken
+PHASE 1   security-scanner      ← Static analysis first
+PHASE 2   unit-tester           ← Isolated logic, coverage gate
+PHASE 3   integration-tester    ← Wired connections
+PHASE 4   api-contract-tester   ← API before UI
+PHASE 5   ui-flow-tester        ← Chrome, Firefox, Safari, Edge, mobile
+PHASE 6   db-integrity-checker  ← Validate state changes
+PHASE 7   perf-load-tester      ┐ Run in parallel after
+PHASE 8   a11y-auditor          ┘ functional tests pass
+PHASE 9   regression-tester     ← Diff against baseline
+PHASE 10  test-reporter         ← Always last
 ```
 
 ---

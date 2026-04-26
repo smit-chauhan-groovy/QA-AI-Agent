@@ -20,6 +20,95 @@ You never use arbitrary sleeps. You always assert on visible state, not implemen
 
 ---
 
+## Knowledge Base Loading
+
+Before testing UI flows, always load project context:
+
+```bash
+# Check for project knowledge
+if [ -f ".qa-knowledge/critical-flows.md" ]; then
+  echo "=== Loading Critical Flows for Testing ==="
+  
+  # Extract critical flows
+  CRITICAL_FLOWS=$(grep -A 10 "^###" .qa-knowledge/critical-flows.md | grep -E "Entry Point|Steps|Success Criteria")
+  
+  echo "Discovered flows to test:"
+  echo "$CRITICAL_FLOWS"
+  
+  USE_PROJECT_CONTEXT=true
+elif [ -f ".qa-knowledge/project-overview.md" ]; then
+  echo "=== Loading Project Overview ==="
+  
+  # Extract framework information
+  FRAMEWORK=$(grep -A 5 "### Frontend" .qa-knowledge/project-overview.md | grep "Framework" | head -1)
+  UI_LIBRARY=$(grep -A 5 "### Frontend" .qa-knowledge/project-overview.md | grep "UI Library" | head -1)
+  
+  echo "Testing framework: $FRAMEWORK"
+  echo "UI Library: $UI_LIBRARY"
+  
+  USE_PROJECT_CONTEXT=true
+else
+  echo "=== No project context found. Using generic UI testing ==="
+  USE_PROJECT_CONTEXT=false
+fi
+```
+
+### Context-Aware Route Selection
+
+```bash
+# Determine routes to test based on available context
+if [ "$USE_PROJECT_CONTEXT" = "true" ] && [ -f ".qa-knowledge/critical-flows.md" ]; then
+  echo "=== Testing Critical Flows ==="
+  
+  # Extract entry points from critical flows
+  ROUTES_TO_TEST=$(grep "**Entry Point**" .qa-knowledge/critical-flows.md | sed 's/**Entry Point**: //' | sed 's/^\// /')
+  
+  echo "Routes discovered from critical flows:"
+  echo "$ROUTES_TO_TEST"
+  
+else
+  echo "=== Discovering Routes Automatically ==="
+  
+  # Fallback to automatic route discovery
+  if [ -f "src/App.tsx" ] || [ -f "src/App.jsx" ]; then
+    ROUTES=$(grep -r "path=" --include="*.tsx" --include="*.jsx" | grep -o 'path="[^"]*"' | sed 's/path="//;s/"//' | head -10)
+  elif [ -d "src/app" ]; then
+    # Next.js app directory
+    ROUTES=$(find src/app -name "page.tsx" -o -name "page.js" | sed 's|src/app||;s|/page.tsx||;s|/page.js||' | sed 's|^|/|')
+  elif [ -d "src/pages" ]; then
+    # Next.js pages directory  
+    ROUTES=$(find src/pages -name "*.tsx" -o -name "*.jsx" | grep -v "_app\|_document" | sed 's|src/pages||;s|\.tsx||;s|\.jsx||' | sed 's|^/index|/|;s|^|/|')
+  fi
+  
+  echo "Discovered routes: $ROUTES"
+fi
+```
+
+### Test User Credentials Loading
+
+```bash
+# Load test credentials if available
+if [ -f ".qa-knowledge/testing-config.md" ]; then
+  echo "=== Loading Test User Credentials ==="
+  
+  # Extract test user information
+  TEST_USER_EMAIL=$(grep -A 5 "standard_user" .qa-knowledge/testing-config.md | grep "email" | head -1 | sed 's/.*: "\(.*\)".*/\1/')
+  TEST_USER_PASSWORD=$(grep -A 5 "standard_user" .qa-knowledge/testing-config.md | grep "password" | head -1 | sed 's/.*: "\(.*\)".*/\1/')
+  
+  if [ -n "$TEST_USER_EMAIL" ] && [ -n "$TEST_USER_PASSWORD" ]; then
+    echo "✓ Found test user credentials"
+    export TEST_USER_EMAIL="$TEST_USER_EMAIL"
+    export TEST_USER_PASSWORD="$TEST_USER_PASSWORD"
+  else
+    echo "→ Using default test credentials (test@example.com / TestPass123!)"
+    export TEST_USER_EMAIL="test@example.com"
+    export TEST_USER_PASSWORD="TestPass123!"
+  fi
+fi
+```
+
+---
+
 ## Framework Selection
 
 ```
@@ -53,10 +142,110 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'mobile', use: { ...devices['iPhone 14'] } },
+    // Desktop browsers
+    { name: 'chromium',  use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox',   use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit',    use: { ...devices['Desktop Safari'] } },
+    { name: 'edge',      use: { ...devices['Desktop Edge'] } },
+    // Mobile viewports
+    { name: 'mobile-ios',     use: { ...devices['iPhone 14'] } },
+    { name: 'mobile-android', use: { ...devices['Pixel 7'] } },
+    { name: 'tablet-ipad',    use: { ...devices['iPad Pro'] } },
   ],
 });
+```
+
+---
+
+## API Response Monitoring (Network Interception)
+
+Every UI flow test MUST intercept API responses to catch errors the UI may silently swallow.
+Add this fixture to `e2e/fixtures/api-monitor.ts` and use it in every test:
+
+```typescript
+// e2e/fixtures/api-monitor.ts
+import { test as base, expect, Page } from '@playwright/test';
+
+type ApiError = { url: string; status: number; body: string };
+
+export const test = base.extend<{ apiErrors: ApiError[] }>({
+  apiErrors: async ({ page }, use) => {
+    const errors: ApiError[] = [];
+
+    page.on('response', async (response) => {
+      const url = response.url();
+      const status = response.status();
+      // Only monitor API calls (adjust pattern to your API base path)
+      if (!url.includes('/api/') && !url.includes('/auth/')) return;
+
+      if (status >= 400) {
+        let body = '';
+        try { body = await response.text(); } catch { /* ignore */ }
+        errors.push({ url, status, body });
+      }
+    });
+
+    await use(errors);
+
+    // After the test, fail if any unexpected API errors occurred
+    if (errors.length > 0) {
+      const summary = errors
+        .map(e => `  ${e.status} ${e.url}\n    Body: ${e.body.slice(0, 200)}`)
+        .join('\n');
+      throw new Error(`API errors detected during test:\n${summary}`);
+    }
+  },
+});
+
+export { expect };
+```
+
+Use in tests instead of plain `import { test, expect } from '@playwright/test'`:
+
+```typescript
+// e2e/flows/auth.flow.spec.ts
+import { test, expect } from '../fixtures/api-monitor';
+
+test('successful login', async ({ page, apiErrors }) => {
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(process.env.TEST_USER_EMAIL!);
+  await page.getByLabel('Password').fill(process.env.TEST_USER_PASSWORD!);
+  await page.getByRole('button', { name: /sign in/i }).click();
+  await expect(page).toHaveURL(/dashboard/);
+  // apiErrors fixture automatically fails the test if any 4xx/5xx API response occurred
+});
+```
+
+### Using Playwright MCP Tools (browser_network_requests)
+
+When running tests interactively via the Playwright MCP, **always call `browser_network_requests`
+after every significant action** to detect API errors that the UI might silently ignore:
+
+```
+After: page.click('submit button')
+→ Call: browser_network_requests
+→ Check: any response with status >= 400 is a test failure
+→ Report: url, status code, and response body
+```
+
+Example check pattern (for MCP-based testing):
+```
+Step 1: Navigate to /login
+Step 2: Fill credentials and submit form
+Step 3: Call browser_network_requests
+Step 4: Assert NO response has status >= 400
+Step 5: If any 4xx/5xx found:
+        → Record bug: "API error: POST /api/auth/login returned 401 — {error body}"
+        → Write to report under "API Errors Detected via Network Monitoring"
+        → Mark the ENTIRE FLOW as ❌ FAIL — do not attempt any remaining steps
+        → ⛔ DO NOT call browser_navigate, browser_click, or ANY tool that changes the page
+        → ⛔ DO NOT navigate to a later step in this flow via URL — this is a CRITICAL VIOLATION
+           (bypassing a failed step via URL does not test the real flow; it hides the bug)
+        → "Skip to the next test scenario" means start a COMPLETELY DIFFERENT test flow
+           (e.g., move on to the registration flow test), NOT navigate to the next page of this flow
+        → Write the bug report entry NOW, then stop this flow entirely
+Step 6: (Only if Step 5 found NO errors) Assert UI shows correct feedback (not just API status)
+Step 7: (Only if Step 5 found NO errors) Use browser navigation to proceed to the next step in the flow
 ```
 
 ---
@@ -68,7 +257,20 @@ export default defineConfig({
 import { Page, Locator } from '@playwright/test';
 
 export abstract class BasePage {
-  constructor(protected page: Page) {}
+  protected apiErrors: Array<{ url: string; status: number; body: string }> = [];
+
+  constructor(protected page: Page) {
+    // Intercept all API responses to detect silent errors
+    page.on('response', async (response) => {
+      const url = response.url();
+      if (!url.includes('/api/') && !url.includes('/auth/')) return;
+      if (response.status() >= 400) {
+        let body = '';
+        try { body = await response.text(); } catch { /* ignore */ }
+        this.apiErrors.push({ url, status: response.status(), body });
+      }
+    });
+  }
 
   async waitForVisible(locator: Locator, timeout = 10_000) {
     await locator.waitFor({ state: 'visible', timeout });
@@ -77,6 +279,15 @@ export abstract class BasePage {
   async fillAndBlur(locator: Locator, value: string) {
     await locator.fill(value);
     await locator.blur();
+  }
+
+  assertNoApiErrors() {
+    if (this.apiErrors.length > 0) {
+      const summary = this.apiErrors
+        .map(e => `${e.status} ${e.url} — ${e.body.slice(0, 200)}`)
+        .join('\n');
+      throw new Error(`Unexpected API errors:\n${summary}`);
+    }
   }
 
   async assertNoConsoleErrors() {
@@ -90,6 +301,32 @@ export abstract class BasePage {
 ---
 
 ## Critical Flow Template
+
+### Context-Aware Test Generation
+
+```typescript
+// Generate tests based on .qa-knowledge/critical-flows.md
+const criticalFlows = loadCriticalFlows('.qa-knowledge/critical-flows.md');
+
+test.describe('Critical User Flows from Project Context', () => {
+  criticalFlows.forEach(flow => {
+    test(flow.name, async ({ page }) => {
+      // Use entry point from discovered flows
+      await page.goto(flow.entryPoint);
+      
+      // Execute steps from discovered flow
+      for (const step of flow.steps) {
+        await executeStep(page, step);
+      }
+      
+      // Assert success criteria from discovered flow
+      await assertSuccessCriteria(page, flow.successCriteria);
+    });
+  });
+});
+```
+
+### Generic Authentication Flow (Fallback)
 
 ```typescript
 // e2e/flows/auth.flow.spec.ts
@@ -141,25 +378,94 @@ test.describe('Authentication Flow', () => {
 
 ## Flow Coverage Checklist
 
+### Context-Aware Coverage (When Project Knowledge Available)
+
+If `.qa-knowledge/critical-flows.md` exists:
+- [x] Load all critical flows from knowledge base
+- [x] Prioritize authentication flows (login, registration, logout)
+- [x] Test business flows (checkout, data entry, etc.)
+- [x] Validate success criteria from discovered flows
+- [x] Use test credentials from testing-config.md
+
+### Generic Coverage (Fallback)
+
 For every app, always cover:
 - [ ] Happy path through the primary user journey
 - [ ] Form validation (empty, invalid format, max length)
 - [ ] Error states (server 500, network offline)
 - [ ] Auth: login / logout / session expiry
-- [ ] Mobile viewport (375px minimum)
 - [ ] Keyboard-only navigation
 - [ ] Browser back/forward behaviour
+
+### Cross-Browser Coverage
+Run all critical flows on:
+- [ ] Chromium (Desktop Chrome)
+- [ ] Firefox (Desktop)
+- [ ] WebKit (Desktop Safari)
+- [ ] Edge (Desktop)
+
+### Mobile Coverage
+- [ ] iPhone 14 viewport (390px) — iOS Safari simulation
+- [ ] Pixel 7 viewport (412px) — Android Chrome simulation
+- [ ] iPad Pro (1024px) — tablet layout
+- [ ] Touch targets >= 44x44px on all interactive elements
+- [ ] No horizontal scrollbar on 375px minimum width
+
+---
+
+## Cross-Browser & Mobile Testing Notes
+
+### Cross-Browser
+All flows in this agent run against Chromium, Firefox, WebKit (Safari), and Edge.
+If a test is flaky on a specific browser, tag it and investigate:
+```typescript
+test.skip(({ browserName }) => browserName === 'webkit', 'Safari-specific flakiness — tracked in #123');
+```
+
+### Real Device Testing (BrowserStack / Sauce Labs)
+For real-device mobile testing beyond viewport simulation, configure:
+```bash
+# BrowserStack
+BROWSERSTACK_USERNAME=xxx BROWSERSTACK_ACCESS_KEY=yyy \
+  npx playwright test --config=playwright.browserstack.config.ts
+```
+```typescript
+// playwright.browserstack.config.ts
+export default defineConfig({
+  use: {
+    connectOptions: {
+      wsEndpoint: `wss://cdp.browserstack.com/playwright?caps=${encodeURIComponent(JSON.stringify({
+        browser: 'safari',
+        os: 'ios',
+        os_version: '16',
+        device: 'iPhone 14',
+        real_mobile: true,
+        'browserstack.username': process.env.BROWSERSTACK_USERNAME,
+        'browserstack.accessKey': process.env.BROWSERSTACK_ACCESS_KEY,
+      }))}`,
+    },
+  },
+});
+```
 
 ---
 
 ## Run Commands
 
 ```bash
-# Headed (local debug)
-npx playwright test --headed --project=chromium
-
-# CI mode
+# All browsers (full cross-browser run)
 npx playwright test --reporter=json
+
+# Single browser
+npx playwright test --project=chromium
+npx playwright test --project=firefox
+npx playwright test --project=webkit
+
+# Mobile only
+npx playwright test --project=mobile-ios --project=mobile-android
+
+# Headed (local debug, Chromium only)
+npx playwright test --headed --project=chromium
 
 # Single flow
 npx playwright test auth.flow.spec.ts
@@ -222,7 +528,20 @@ EOF
 ## Rules
 - ❌ Never `page.waitForTimeout(N)` — use `waitFor`, `expect().toBeVisible()`, or `waitForResponse`
 - ❌ Never assert on CSS classes or data-testid that leak implementation
+- ❌ **Never inspect source code when a bug is found** — record the failure (URL, status, error message)
+  and move to the next test. Do NOT open any `.ts`, `.js`, `.tsx`, `.py`, or other source files
+  to investigate why a bug occurred. That is the developer's job.
 - ✅ Always use `getByRole`, `getByLabel`, `getByText` (accessible selectors first)
 - ✅ Always clean up created test data in `afterEach` / `afterAll`
 - ✅ Keep each test independent — no shared mutable state between tests
 - ✅ Save results to `results.json` or `ui-results.json` for Test Reporter consumption
+
+## Bug Reporting Protocol
+
+When a test fails or an error is detected:
+
+1. Record: what failed, which URL/endpoint, what error or status code was returned
+2. Mark the flow ❌ FAIL
+3. Write the bug to the report under Issues (P1 or P2)
+4. Stop this flow and move to the next one
+5. ⛔ DO NOT read, grep, or open any source file — only document what was observed at runtime

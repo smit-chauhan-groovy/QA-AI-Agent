@@ -152,6 +152,86 @@ def test_list_pagination(authed):
 
 ---
 
+## API Response Error Detection
+
+**Critical rule**: Always assert on the response body, not just the status code.
+A 200 response with `{"error": "something went wrong"}` in the body is a bug.
+A 500 response with no body is also a bug.
+
+```python
+# tests/api/helpers.py
+import httpx
+
+def assert_success(response: httpx.Response, expected_status: int = 200):
+    """Assert response is successful — checks status AND that body contains no error keys."""
+    assert response.status_code == expected_status, (
+        f"Expected {expected_status}, got {response.status_code}\n"
+        f"URL: {response.url}\n"
+        f"Body: {response.text[:500]}"
+    )
+    # Detect error signals hidden inside 2xx responses
+    try:
+        body = response.json()
+        error_keys = {"error", "errors", "message", "detail", "err"}
+        found = error_keys.intersection(body.keys()) if isinstance(body, dict) else set()
+        if found and response.status_code < 400:
+            # Only fail if the value looks like an actual error (non-empty string/list)
+            for key in found:
+                val = body[key]
+                if val and val not in (None, [], {}, ""):
+                    raise AssertionError(
+                        f"Response returned {response.status_code} but body contains "
+                        f"error field '{key}': {val!r}\nURL: {response.url}"
+                    )
+    except (ValueError, KeyError):
+        pass  # Non-JSON body, skip body inspection
+
+def assert_error(response: httpx.Response, expected_status: int):
+    """Assert error response has correct status AND a non-empty error body."""
+    assert response.status_code == expected_status, (
+        f"Expected {expected_status}, got {response.status_code}\n"
+        f"URL: {response.url}\n"
+        f"Body: {response.text[:500]}"
+    )
+    # Body must not be empty on error responses
+    assert response.text.strip(), (
+        f"Error response {response.status_code} from {response.url} has empty body — "
+        "clients cannot display a meaningful error message"
+    )
+    # Body must be parseable JSON with an error field
+    try:
+        body = response.json()
+        assert isinstance(body, dict), f"Error body is not a JSON object: {body!r}"
+        error_keys = {"error", "errors", "message", "detail"}
+        assert error_keys.intersection(body.keys()), (
+            f"Error response missing error description field (expected one of {error_keys})\n"
+            f"Body: {body}"
+        )
+    except ValueError:
+        raise AssertionError(
+            f"Error response {response.status_code} from {response.url} "
+            f"is not valid JSON: {response.text[:200]!r}"
+        )
+```
+
+Usage in every test:
+
+```python
+from tests.api.helpers import assert_success, assert_error
+
+def test_login_returns_200_and_token(client):
+    r = client.post("/auth/login", json={"email": "test@example.com", "password": "ValidPass1!"})
+    assert_success(r, 200)          # checks status AND body has no hidden error
+    assert "token" in r.json()
+
+def test_login_wrong_password(client):
+    r = client.post("/auth/login", json={"email": "test@example.com", "password": "wrong"})
+    assert_error(r, 401)            # checks status, non-empty body, and error field present
+    assert "token" not in r.json()
+```
+
+---
+
 ## Error Shape Consistency Check
 
 Every error response must conform to the same shape. Validate it:
