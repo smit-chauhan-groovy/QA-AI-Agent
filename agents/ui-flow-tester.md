@@ -234,8 +234,18 @@ Step 1: Navigate to /login
 Step 2: Fill credentials and submit form
 Step 3: Call browser_network_requests
 Step 4: Assert NO response has status >= 400
-Step 5: If any 4xx/5xx found → FAIL with: "API error: POST /api/auth/login returned 401 — {error body}"
-Step 6: Also assert UI shows correct feedback (not just API status)
+Step 5: If any 4xx/5xx found:
+        → Record bug: "API error: POST /api/auth/login returned 401 — {error body}"
+        → Write to report under "API Errors Detected via Network Monitoring"
+        → Mark the ENTIRE FLOW as ❌ FAIL — do not attempt any remaining steps
+        → ⛔ DO NOT call browser_navigate, browser_click, or ANY tool that changes the page
+        → ⛔ DO NOT navigate to a later step in this flow via URL — this is a CRITICAL VIOLATION
+           (bypassing a failed step via URL does not test the real flow; it hides the bug)
+        → "Skip to the next test scenario" means start a COMPLETELY DIFFERENT test flow
+           (e.g., move on to the registration flow test), NOT navigate to the next page of this flow
+        → Write the bug report entry NOW, then stop this flow entirely
+Step 6: (Only if Step 5 found NO errors) Assert UI shows correct feedback (not just API status)
+Step 7: (Only if Step 5 found NO errors) Use browser navigation to proceed to the next step in the flow
 ```
 
 ---
@@ -518,7 +528,20 @@ EOF
 ## Rules
 - ❌ Never `page.waitForTimeout(N)` — use `waitFor`, `expect().toBeVisible()`, or `waitForResponse`
 - ❌ Never assert on CSS classes or data-testid that leak implementation
+- ❌ **Never inspect source code when a bug is found** — record the failure (URL, status, error message)
+  and move to the next test. Do NOT open any `.ts`, `.js`, `.tsx`, `.py`, or other source files
+  to investigate why a bug occurred. That is the developer's job.
 - ✅ Always use `getByRole`, `getByLabel`, `getByText` (accessible selectors first)
 - ✅ Always clean up created test data in `afterEach` / `afterAll`
 - ✅ Keep each test independent — no shared mutable state between tests
 - ✅ Save results to `results.json` or `ui-results.json` for Test Reporter consumption
+
+## Bug Reporting Protocol
+
+When a test fails or an error is detected:
+
+1. Record: what failed, which URL/endpoint, what error or status code was returned
+2. Mark the flow ❌ FAIL
+3. Write the bug to the report under Issues (P1 or P2)
+4. Stop this flow and move to the next one
+5. ⛔ DO NOT read, grep, or open any source file — only document what was observed at runtime

@@ -245,24 +245,30 @@ API: http://localhost:8000
    - Perform the action
    - **Call `browser_network_requests` after EVERY action that triggers an API call — do this before moving to the next step**
    - **⛔ API ERROR CAPTURE PROTOCOL — run after every network check:**
-     1. If ANY response has `status >= 400` → **STOP. Do NOT navigate further.**
-        - Mark current step as ❌ FAIL
+     1. If ANY response has `status >= 400` → **STOP. Mark the ENTIRE FLOW as ❌ FAIL.**
         - Record in Issues: URL, method, status code, response body (first 300 chars)
         - Add to the "API Errors Detected via Network Monitoring" report table
-        - Then continue to the next step (do not abort the whole flow)
-     2. If response is 2xx but body contains `"error"` or `"errors"` key with a non-empty value → **STOP. Do NOT navigate further.**
-        - Mark current step as ❌ FAIL
+        - ⛔ **DO NOT call `browser_navigate`, `browser_click`, or ANY tool that changes the page.**
+        - ⛔ **DO NOT use a URL to jump to a later step in this flow — this is a CRITICAL VIOLATION.**
+          Navigating past a failed step via URL does not test the real flow; it hides the bug and
+          produces meaningless results for all dependent steps.
+        - "Skip to the NEXT SEPARATE TEST SCENARIO" means begin a completely different test flow
+          (e.g., move on to the registration flow), NOT navigate to the next page of the current flow.
+        - **Write the bug to the report immediately**, then abandon this flow entirely.
+     2. If response is 2xx but body contains `"error"` or `"errors"` key with a non-empty value → **STOP. Mark the ENTIRE FLOW as ❌ FAIL.**
         - Record: URL, method, `200 OK but body.error = "[value]"`
         - Add to the "API Errors Detected via Network Monitoring" report table
-        - Then continue to the next step
-     3. Only if NO errors detected → mark step ✅ PASS and navigate to next step
+        - ⛔ **DO NOT call `browser_navigate` or any navigation tool. DO NOT use a URL to bypass this step.**
+        - **Write the bug to the report immediately**, then abandon this flow entirely.
+     3. Only if NO errors detected → mark step ✅ PASS and use browser navigation to proceed to the next step in the flow
    - Verify the visible UI result after the network check
    - Document Pass/Fail with API response details
 
    **WITHOUT browser tools:**
    - Create a test checklist
    - List what should be verified
-   - Mark as Pass/Fail based on code review
+   - Mark as Pass/Fail based on observed runtime behavior only
+   - ⛔ **DO NOT inspect source code to determine Pass/Fail — test behavior, not implementation**
 
 4. **Report results:**
 
@@ -310,21 +316,28 @@ For each endpoint in `.qa-knowledge/api-endpoints.md`:
    - Do NOT navigate to the next page until this check is complete
 
 2. Check `response.status_code`:
-   - If `status >= 400` → **FAIL this step immediately**
+   - If `status >= 400` → **FAIL — mark the ENTIRE FLOW as ❌ FAIL and abandon it**
      - Record to Issues: `[METHOD] [URL] → [status] — [body excerpt ≤300 chars]`
      - Add row to "API Errors Detected via Network Monitoring" table in the report
-     - Continue to next step (do not abort the full flow)
+     - ⛔ **DO NOT call `browser_navigate` or any navigation tool**
+     - ⛔ **DO NOT use a direct URL to jump to a later step in this flow — this is a CRITICAL VIOLATION**
+       (URL-bypassing a failed step hides the bug and makes dependent-step results meaningless)
+     - "Skip to the NEXT SEPARATE TEST SCENARIO" = start a completely different test flow, NOT navigate
+       to the next page of the current flow
+     - **Write the bug to the report NOW**, then abandon this flow entirely
 
 3. If `status` is 2xx, parse `response.json()` and check for keys: `error`, `errors`, `detail`, `message`
-   - If any key has a non-empty error value → **FAIL this step**
+   - If any key has a non-empty error value → **FAIL — mark the ENTIRE FLOW as ❌ FAIL and abandon it**
      - Record: `[METHOD] [URL] → 200 OK but body.error = "[value]"`
      - Add row to "API Errors Detected via Network Monitoring" table
-     - Continue to next step
+     - ⛔ **DO NOT call `browser_navigate` or any navigation tool. DO NOT use a URL to bypass this step.**
+     - **Write the bug to the report NOW**, then abandon this flow entirely
 
-4. If `status` is 4xx/5xx AND body is empty or not JSON → **FAIL**
+4. If `status` is 4xx/5xx AND body is empty or not JSON → **FAIL — abandon this flow**
    - Record: `[METHOD] [URL] → [status] — empty/non-JSON body`
+   - ⛔ **DO NOT navigate further** — write the bug to the report immediately
 
-5. Only advance to the next step if NO errors were detected in step 2, 3, or 4
+5. Only advance to the next step (via browser navigation) if NO errors were detected in steps 2, 3, or 4
 
 ### 4C - Database
 For each model in `.qa-knowledge/database-schema.md`:
@@ -448,6 +461,24 @@ SUCCESS_CRITERIA: All relationships, constraints, and cascade rules validate
 - ❌ Skipping discovery and assuming the stack
 - ❌ Reporting pass when any P1 test is unverified
 - ❌ Using `Thread.sleep()` — always use explicit waits/polling
+- ❌ **URL-bypassing a failed step** — if an API error blocks step N, navigating directly to the URL
+  of step N+1 is forbidden. Subsequent steps depend on step N succeeding; testing them via URL
+  produces invalid results and masks the real bug. Always report the failure and stop the flow.
+- ❌ **Inspecting source code when a bug is found** — when a test fails or an error is detected,
+  **NEVER read, grep, or investigate the source code**. Your job is to report what failed
+  (URL, status code, error message, screenshot) and move to the next test. Root-cause analysis
+  of the implementation is the developer's responsibility, not the QA agent's.
+
+## Bug Found → Correct Behavior
+
+When ANY bug or error is detected during testing:
+
+1. **Record it immediately** — URL/endpoint, status code, error message, response body (≤300 chars)
+2. **Mark the flow as ❌ FAIL**
+3. **Add it to the Issues section of the report** (P1 = blocking, P2 = important)
+4. **Move on** — either to the next test scenario or generate the final report
+5. ⛔ **DO NOT open any source file, run grep on the codebase, or investigate WHY the bug exists**
+6. ⛔ **DO NOT attempt to fix or diagnose the bug** — only document it
 
 ---
 
